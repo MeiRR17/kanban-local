@@ -34,6 +34,13 @@
       <button type="button" id="import" class="button subtle" title="Import a saved board from JSON">↥ Import</button>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </section>
+    <section class="board-overview" aria-label="Board-wide progress and deadline summary">
+      <div class="overview-tile"><span>Active tasks</span><strong id="overview-active">0</strong></div>
+      <div class="overview-tile"><span>Completed</span><strong id="overview-completed">0</strong><small id="overview-percent">0% of board</small></div>
+      <button type="button" class="overview-tile overview-action" id="overview-overdue" aria-label="Show overdue tasks"><span>Overdue</span><strong id="overview-overdue-count">0</strong><small>Show overdue tasks</small></button>
+      <button type="button" class="overview-tile overview-action" id="overview-next7" aria-label="Show tasks due in the next seven days"><span>Due next 7 days</span><strong id="overview-next7-count">0</strong><small id="overview-today">0 due today</small></button>
+      <div class="overview-tile"><span>Active high priority</span><strong id="overview-high">0</strong></div>
+    </section>
     <div id="notice" class="notice" role="status" aria-live="polite"></div>
     <section class="board" id="board" aria-label="Kanban board">
       <section class="lane" data-status="todo" aria-labelledby="todo-heading"><div class="lane-header"><div class="lane-title"><span class="lane-dot todo-dot"></span><h2 id="todo-heading">To do</h2><span class="lane-count" id="todo-count">0</span></div><button type="button" class="lane-add" data-add="todo" aria-label="Add a task to To do">＋</button></div><div class="tasks" data-list="todo" role="list"></div></section>
