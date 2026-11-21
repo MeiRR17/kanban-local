@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111c30">
+  <meta name="description" content="Private Kanban board with drag-and-drop tasks, deadlines, labels and JSON export. All data stays on your device.">
+  <title>Kanban Local — your work, your board</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▦</span><strong>kanban<span>local</span></strong><small>private workspace</small></a>
+    <a class="repo-link" href="https://github.com/MeiRR17/kanban-local" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+  </header>
+  <main class="shell">
+    <section class="intro">
+      <div class="eyebrow"><span class="live-dot"></span> FOCUS. ORGANIZE. SHIP.</div>
+      <div class="intro-row"><div><h1>Get clarity. <em>Keep momentum.</em></h1><p>A focused Kanban board that runs entirely in your browser. Organize tasks, track priorities, and own your data.</p></div>
+        <button type="button" id="add-task" class="button primary"><span aria-hidden="true">＋</span> New task</button></div>
+    </section>
+    <section class="toolbar" aria-label="Board controls">
+      <div class="search-wrap"><label for="search" class="sr-only">Search tasks</label><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search tasks and tags..." autocomplete="off"></div>
+      <div class="control"><label for="priority-filter">Priority</label><select id="priority-filter"><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+      <div class="toolbar-spacer"></div>
+      <span id="total-count" class="total-count">0 tasks</span>
+      <button type="button" id="export" class="button subtle" title="Export all tasks to JSON">↓ Export</button>
+      <button type="button" id="import" class="button subtle" title="Import a saved board from JSON">↥ Import</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </section>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <section class="board" id="board" aria-label="Kanban board">
+      <section class="lane" data-status="todo" aria-labelledby="todo-heading"><div class="lane-header"><div class="lane-title"><span class="lane-dot todo-dot"></span><h2 id="todo-heading">To do</h2><span class="lane-count" id="todo-count">0</span></div><button type="button" class="lane-add" data-add="todo" aria-label="Add a task to To do">＋</button></div><div class="tasks" data-list="todo" role="list"></div></section>
+      <section class="lane" data-status="doing" aria-labelledby="doing-heading"><div class="lane-header"><div class="lane-title"><span class="lane-dot doing-dot"></span><h2 id="doing-heading">In progress</h2><span class="lane-count" id="doing-count">0</span></div><button type="button" class="lane-add" data-add="doing" aria-label="Add a task to In progress">＋</button></div><div class="tasks" data-list="doing" role="list"></div></section>
+      <section class="lane" data-status="done" aria-labelledby="done-heading"><div class="lane-header"><div class="lane-title"><span class="lane-dot done-dot"></span><h2 id="done-heading">Done</h2><span class="lane-count" id="done-count">0</span></div><button type="button" class="lane-add" data-add="done" aria-label="Add a task to Done">＋</button></div><div class="tasks" data-list="done" role="list"></div></section>
+    </section>
+    <div class="below-board">
+      <p class="privacy"><span aria-hidden="true">◈</span> Private by design. No account, no analytics, no server — tasks are stored in this browser only. Export backups regularly.</p>
+      <button type="button" id="clear-done" class="text-button">Clear completed tasks</button>
+    </div>
+  </main>
+  <dialog id="task-dialog" aria-labelledby="dialog-heading">
+    <form id="task-form" novalidate>
+      <div class="dialog-head"><div><span class="eyebrow">TASK DETAILS</span><h2 id="dialog-heading">New task</h2></div><button type="button" id="close-dialog" class="icon-button" aria-label="Close task editor">×</button></div>
+      <input id="task-id" type="hidden">
+      <label class="field">Task title <span class="required">*</span><input id="title" maxlength="120" required placeholder="What needs to be done?"></label>
+      <label class="field">Description <textarea id="description" maxlength="3000" rows="4" placeholder="Add notes or acceptance criteria..."></textarea></label>
+      <div class="dialog-grid">
+        <label class="field">Status <select id="status"><option value="todo">To do</option><option value="doing">In progress</option><option value="done">Done</option></select></label>
+        <label class="field">Priority <select id="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+      </div>
+      <div class="dialog-grid">
+        <label class="field">Due date <input id="due" type="date"></label>
+        <label class="field">Tags (comma-separated) <input id="tags" maxlength="280" placeholder="design, research"></label>
+      </div>
+      <p id="form-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" id="cancel-dialog" class="button subtle">Cancel</button><button type="submit" class="button primary">Save task</button></div>
+    </form>
+  </dialog>
+  <footer><span>Kanban Local · Open source</span><span>Built by <a href="https://github.com/MeiRR17" target="_blank" rel="noopener noreferrer">Meir Dvir</a></span></footer>
+</body>
+</html>
