@@ -25,6 +25,10 @@
       <div class="control"><label for="priority-filter">Priority</label><select id="priority-filter"><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
       <div class="toolbar-spacer"></div>
       <span id="total-count" class="total-count">0 tasks</span>
+      <div class="history-actions" aria-label="Edit history">
+        <button type="button" id="undo" class="button subtle" disabled title="Undo last board change (Ctrl / ⌘ + Z)">↶ Undo</button>
+        <button type="button" id="redo" class="button subtle" disabled title="Redo last undone change (Ctrl / ⌘ + Shift + Z)">↷ Redo</button>
+      </div>
       <button type="button" id="export" class="button subtle" title="Export all tasks to JSON">↓ Export</button>
       <button type="button" id="import" class="button subtle" title="Import a saved board from JSON">↥ Import</button>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
