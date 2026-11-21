@@ -19,6 +19,8 @@ let editingId = null;
 const HISTORY_LIMIT = 30;
 const undoStack = [];
 const redoStack = [];
+let boardRevision = 0;
+let importSequence = 0;
 
 const make = (tag, className = '', text = '') => {
   const el = document.createElement(tag);
@@ -47,12 +49,14 @@ function commit(nextBoard) {
   if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
   redoStack.length = 0;
   board = nextBoard;
+  boardRevision++;
   saveAndRender('Changes saved in this browser.');
 }
 function undo() {
   if (!undoStack.length) return;
   redoStack.push(board);
   board = undoStack.pop();
+  boardRevision++;
   saveAndRender('Last board change undone.');
 }
 function redo() {
@@ -60,6 +64,7 @@ function redo() {
   undoStack.push(board);
   if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
   board = redoStack.pop();
+  boardRevision++;
   saveAndRender('Board change reapplied.');
 }
 
@@ -122,6 +127,7 @@ function card(task) {
     { id: 'down', title: 'Move ' + task.title + ' down within this column', label: '↓', disabled: hasFilters || position >= siblings.length - 1 },
     { id: 'prev', title: 'Move ' + task.title + ' to previous column', label: '←', disabled: index === 0 },
     { id: 'next', title: 'Move ' + task.title + ' to next column', label: '→', disabled: index === STATUSES.length - 1 },
+    { id: 'duplicate', title: 'Duplicate ' + task.title, label: '⧉', disabled: board.tasks.length >= 500 },
     { id: 'delete', title: 'Delete ' + task.title, label: '×', disabled: false },
   ];
   for (const action of buttons) {
@@ -217,6 +223,15 @@ $('board').addEventListener('click', event => {
   const task = board.tasks.find(t => t.id === id);
   if (!task) return;
   if (action.dataset.action === 'edit') openEditor(task.status, id);
+  else if (action.dataset.action === 'duplicate') {
+    try {
+      // Reuse the existing task model to generate a fresh ID and timestamps.
+      // Keep the original unchanged; Undo can remove the duplicate.
+      const title = task.title.slice(0, 113) + ' (copy)';
+      commit(addTask(board, { ...task, title }).board);
+      notice('Task duplicated locally. Undo removes the new copy.');
+    } catch (error) { notice(error.message, 'error'); }
+  }
   else if (action.dataset.action === 'delete') {
     if (confirm('Delete "' + task.title + '"? You can undo this change during this session.')) commit(deleteTask(board, id));
   } else if (action.dataset.action === 'up' || action.dataset.action === 'down') {
@@ -320,12 +335,26 @@ $('import-file').addEventListener('change', async event => {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
-  if (file.size > 1024 * 1024) { notice('Choose a JSON file smaller than 1 MB.', 'error'); return; }
+  const request = ++importSequence;
+  const startingRevision = boardRevision;
+  if (file.size > 1024 * 1024) {
+    notice('Choose a JSON file smaller than 1 MB.', 'error');
+    return;
+  }
   try {
-    const imported = parseBoard(await file.text());
+    const text = await file.text();
+    if (request !== importSequence) return;
+    if (boardRevision !== startingRevision || dialog.open) {
+      notice('Board changed or task editor opened during file reading. Import cancelled to preserve your changes.', 'warning');
+      return;
+    }
+    const imported = parseBoard(text);
     if (!confirm('Replace all ' + board.tasks.length + ' existing tasks with ' + imported.tasks.length + ' imported tasks? Export a backup first if needed.')) return;
+    if (request !== importSequence || boardRevision !== startingRevision || dialog.open) return;
     commit(imported);
-  } catch (error) { notice('Import failed: ' + error.message, 'error'); }
+  } catch (error) {
+    if (request === importSequence) notice('Import failed: ' + error.message, 'error');
+  }
 });
 
 render();
