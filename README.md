@@ -17,6 +17,7 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 - **Moving work:** Drag tasks between columns or reorder inside a column. Keyboard and screen-reader users can use **up/down** buttons to reorder within a column and **left/right** buttons to move between columns. Reorder buttons **and drag-and-drop** are disabled while filters are applied so hidden tasks do not cause surprising moves.
 - **Editing:** Add, edit or delete tasks, with confirmation before destructive actions.
 - **Undo / redo:** Up to 30 previous board changes in the current tab session, including task edits, deletes, completed-task cleanup and imported-board replacement. Use toolbar buttons or Ctrl/⌘+Z, Ctrl/⌘+Shift+Z or Ctrl+Y when focus is not in an input.
+- **Board overview:** A counts-only dashboard above the columns reports active/completed work, completion percentage, overdue deadlines, due-next-seven-days workload and active high-priority tasks. Deadline cards jump to the respective due-date filters. These counts cover the **entire board**, even when a filter is active.
 - **Focus:** Filter by text, priority and due date. Due-date options include overdue, today, the next seven calendar days, and tasks without a date. Completed tasks are excluded from overdue/today/upcoming views, but can appear in the undated view. Column counters represent all tasks, while the toolbar shows the visible count when filtering.
 - **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser.
 - **Backup:** Export all tasks to JSON or replace the board from an exported JSON file. Imports are validated and require confirmation.
@@ -39,6 +40,7 @@ This is a code implementation awaiting the owner's centralized validation cycle;
 - `app.js` — local UI, drag/drop, filters, import/export
 - `src/board.js` — pure task model, validation and persistence
 - `src/filters.js` — pure local-calendar search, priority and due-date filters
+- `src/overview.js` — aggregate progress and due-date counters without task details
 - `LICENSE` — MIT
 
 ## Author
