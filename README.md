@@ -14,8 +14,9 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 
 - **Three columns:** To do, In progress and Done.
 - **Tasks:** Title, description, priority, comma-separated tags and optional due date.
-- **Moving work:** Drag tasks between columns or reorder inside a column. Keyboard and screen-reader users can use the left/right movement buttons on each task card.
+- **Moving work:** Drag tasks between columns or reorder inside a column. Keyboard and screen-reader users can use **up/down** buttons to reorder within a column and **left/right** buttons to move between columns. Reorder buttons are disabled while filters are applied so hidden tasks do not cause surprising moves.
 - **Editing:** Add, edit or delete tasks, with confirmation before destructive actions.
+- **Undo / redo:** Up to 30 previous board changes in the current tab session, including task edits, deletes, completed-task cleanup and imported-board replacement. Use toolbar buttons or Ctrl/⌘+Z, Ctrl/⌘+Shift+Z or Ctrl+Y when focus is not in an input.
 - **Focus:** Filter by text or priority. Column counters represent all tasks, while the toolbar shows the visible count when filtering.
 - **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser.
 - **Backup:** Export all tasks to JSON or replace the board from an exported JSON file. Imports are validated and require confirmation.
@@ -23,7 +24,9 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 
 ## Privacy and limitations
 
-Tasks are not sent to a server; the app makes no network requests except any normal static resource requests made by the host page. Data is stored in your current browser profile and may disappear if storage is cleared or private browsing closes. **Export regularly.** There is no cross-device synchronization.
+Tasks are not sent to a server; the app makes no network requests except any normal static resource requests made by the host page.
+
+Undo/redo history is **in memory only**, not part of the exported board JSON or localStorage. It disappears when the tab reloads or closes. Export a JSON backup to protect important task changes. Data is stored in your current browser profile and may disappear if storage is cleared or private browsing closes. **Export regularly.** There is no cross-device synchronization.
 
 A board contains at most 500 tasks. Each task allows a 120-character title, 3,000-character description, and 12 tags of up to 24 characters each. JSON imports are limited to 1 MB. The exported format is versioned (`version: 1`). Importing a file **replaces**, rather than merges, the existing board.
 
