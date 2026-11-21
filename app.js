@@ -12,6 +12,9 @@ const saved = readStoredBoard();
 let board = saved.board;
 let dragging = null;
 let editingId = null;
+const HISTORY_LIMIT = 30;
+const undoStack = [];
+const redoStack = [];
 
 const make = (tag, className = '', text = '') => {
   const el = document.createElement(tag);
@@ -25,20 +28,45 @@ function notice(message, type = '') {
 }
 if (saved.warning) notice(saved.warning, 'warning');
 
-function commit(nextBoard) {
-  board = nextBoard;
+function saveAndRender(successMessage) {
   try {
     storeBoard(board);
-    notice('Changes saved in this browser.');
+    notice(successMessage);
   } catch {
     notice('Could not save locally (storage may be blocked or full). Export a JSON backup now to avoid losing changes.', 'error');
   }
   render();
 }
+function commit(nextBoard) {
+  if (nextBoard === board) return;
+  undoStack.push(board);
+  if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+  redoStack.length = 0;
+  board = nextBoard;
+  saveAndRender('Changes saved in this browser.');
+}
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(board);
+  board = undoStack.pop();
+  saveAndRender('Last board change undone.');
+}
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(board);
+  if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+  board = redoStack.pop();
+  saveAndRender('Board change reapplied.');
+}
 
-function move(id, status, before = null) {
-  try { commit(moveTask(board, id, status, before)); }
-  catch (error) { notice(error.message, 'error'); }
+function move(id, status, before = null, focusAction = null) {
+  try {
+    commit(moveTask(board, id, status, before));
+    if (focusAction) {
+      const target = [...document.querySelectorAll('.task')].find(card => card.dataset.id === id);
+      target?.querySelector('[data-action="' + focusAction + '"]')?.focus();
+    }
+  } catch (error) { notice(error.message, 'error'); }
 }
 
 function dueLabel(value) {
@@ -82,7 +110,12 @@ function card(task) {
   if (task.due) footer.append(make('span', 'due' + (overdue(task.due, task.status) ? ' overdue' : ''), (overdue(task.due, task.status) ? 'Overdue · ' : 'Due · ') + dueLabel(task.due)));
   const actions = make('div', 'task-actions');
   const index = STATUSES.findIndex(s => s.id === task.status);
+  const siblings = board.tasks.filter(entry => entry.status === task.status);
+  const position = siblings.findIndex(entry => entry.id === task.id);
+  const hasFilters = search.value.trim().length > 0 || priorityFilter.value !== 'all';
   const buttons = [
+    { id: 'up', title: 'Move ' + task.title + ' up within this column', label: '↑', disabled: hasFilters || position <= 0 },
+    { id: 'down', title: 'Move ' + task.title + ' down within this column', label: '↓', disabled: hasFilters || position >= siblings.length - 1 },
     { id: 'prev', title: 'Move ' + task.title + ' to previous column', label: '←', disabled: index === 0 },
     { id: 'next', title: 'Move ' + task.title + ' to next column', label: '→', disabled: index === STATUSES.length - 1 },
     { id: 'delete', title: 'Delete ' + task.title, label: '×', disabled: false },
@@ -120,6 +153,8 @@ function render() {
     else lane.append(make('div', 'empty-lane', all.length ? 'No tasks match your filters.' : 'Nothing here yet. Add a task to get started.'));
   }
   $('clear-done').disabled = !board.tasks.some(task => task.status === 'done');
+  $('undo').disabled = undoStack.length === 0;
+  $('redo').disabled = redoStack.length === 0;
 }
 
 function openEditor(status = 'todo', id = null) {
@@ -169,11 +204,20 @@ $('board').addEventListener('click', event => {
   if (!task) return;
   if (action.dataset.action === 'edit') openEditor(task.status, id);
   else if (action.dataset.action === 'delete') {
-    if (confirm('Delete "' + task.title + '"? This cannot be undone.')) commit(deleteTask(board, id));
+    if (confirm('Delete "' + task.title + '"? You can undo this change during this session.')) commit(deleteTask(board, id));
+  } else if (action.dataset.action === 'up' || action.dataset.action === 'down') {
+    const siblings = board.tasks.filter(entry => entry.status === task.status);
+    const position = siblings.findIndex(entry => entry.id === id);
+    const direction = action.dataset.action;
+    if (direction === 'up' && position > 0) move(id, task.status, siblings[position - 1].id, direction);
+    else if (direction === 'down' && position >= 0 && position < siblings.length - 1) {
+      // Insert ahead of the item two positions later; append if at the end.
+      move(id, task.status, siblings[position + 2]?.id ?? null, direction);
+    }
   } else {
     const index = STATUSES.findIndex(s => s.id === task.status);
     const next = STATUSES[index + (action.dataset.action === 'prev' ? -1 : 1)];
-    if (next) move(id, next.id);
+    if (next) move(id, next.id, null, action.dataset.action);
   }
 });
 
@@ -210,13 +254,28 @@ $('board').addEventListener('drop', event => {
   document.querySelectorAll('.drag-over,.drag-before,.dragging').forEach(el => el.classList.remove('drag-over', 'drag-before', 'dragging'));
 });
 
+$('undo').addEventListener('click', undo);
+$('redo').addEventListener('click', redo);
+document.addEventListener('keydown', event => {
+  if (dialog.open || !event.ctrlKey && !event.metaKey || event.altKey) return;
+  if (event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+  const key = event.key.toLowerCase();
+  if (key === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) redo();
+    else undo();
+  } else if (key === 'y' && !event.shiftKey) {
+    event.preventDefault();
+    redo();
+  }
+});
 search.addEventListener('input', render);
 priorityFilter.addEventListener('change', render);
 
 $('clear-done').addEventListener('click', () => {
   const count = board.tasks.filter(task => task.status === 'done').length;
   if (!count) return;
-  if (confirm('Permanently remove ' + count + ' completed task(s)? Export a backup first if needed.')) {
+  if (confirm('Remove ' + count + ' completed task(s)? You can undo this during the current session.')) {
     commit({ ...board, tasks: board.tasks.filter(task => task.status !== 'done') });
   }
 });
