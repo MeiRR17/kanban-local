@@ -2,12 +2,15 @@ import {
   STATUSES, emptyBoard, readStoredBoard, storeBoard, addTask,
   editTask, deleteTask, moveTask, parseBoard, serializeBoard,
 } from './src/board.js';
+import { filterTasks, localDateKey } from './src/filters.js';
 
 const $ = id => document.getElementById(id);
 const dialog = $('task-dialog');
 const form = $('task-form');
 const search = $('search');
 const priorityFilter = $('priority-filter');
+const dueFilter = $('due-filter');
+const hasActiveFilters = () => Boolean(search.value.trim()) || priorityFilter.value !== 'all' || dueFilter.value !== 'all';
 const saved = readStoredBoard();
 let board = saved.board;
 let dragging = null;
@@ -84,7 +87,7 @@ function overdue(date, status) {
 
 function card(task) {
   const item = make('article', 'task');
-  item.draggable = true;
+  item.draggable = !hasActiveFilters();
   item.tabIndex = 0;
   item.setAttribute('role', 'listitem');
   item.dataset.id = task.id;
@@ -112,7 +115,7 @@ function card(task) {
   const index = STATUSES.findIndex(s => s.id === task.status);
   const siblings = board.tasks.filter(entry => entry.status === task.status);
   const position = siblings.findIndex(entry => entry.id === task.id);
-  const hasFilters = search.value.trim().length > 0 || priorityFilter.value !== 'all';
+  const hasFilters = hasActiveFilters();
   const buttons = [
     { id: 'up', title: 'Move ' + task.title + ' up within this column', label: '↑', disabled: hasFilters || position <= 0 },
     { id: 'down', title: 'Move ' + task.title + ' down within this column', label: '↓', disabled: hasFilters || position >= siblings.length - 1 },
@@ -135,12 +138,11 @@ function card(task) {
 }
 
 function render() {
-  const term = search.value.trim().toLocaleLowerCase();
-  const priority = priorityFilter.value;
-  const visible = board.tasks.filter(task => {
-    if (priority !== 'all' && task.priority !== priority) return false;
-    const haystack = [task.title, task.description, ...task.tags].join(' ').toLocaleLowerCase();
-    return !term || haystack.includes(term);
+  const visible = filterTasks(board.tasks, {
+    query: search.value,
+    priority: priorityFilter.value,
+    due: dueFilter.value,
+    today: localDateKey(),
   });
   $('total-count').textContent = board.tasks.length + (visible.length !== board.tasks.length ? ' total · ' + visible.length + ' shown' : ' tasks');
   for (const status of STATUSES) {
@@ -234,7 +236,7 @@ $('board').addEventListener('dragend', () => {
   document.querySelectorAll('.drag-over,.drag-before,.dragging').forEach(el => el.classList.remove('drag-over', 'drag-before', 'dragging'));
 });
 $('board').addEventListener('dragover', event => {
-  if (!dragging) return;
+  if (!dragging || hasActiveFilters()) return;
   event.preventDefault();
   document.querySelectorAll('.drag-before,.drag-over').forEach(el => el.classList.remove('drag-before', 'drag-over'));
   const target = event.target.closest('.task');
@@ -242,7 +244,7 @@ $('board').addEventListener('dragover', event => {
   else event.target.closest('.lane')?.classList.add('drag-over');
 });
 $('board').addEventListener('drop', event => {
-  if (!dragging) return;
+  if (!dragging || hasActiveFilters()) return;
   event.preventDefault();
   const lane = event.target.closest('.lane');
   const target = event.target.closest('.task');
@@ -271,6 +273,7 @@ document.addEventListener('keydown', event => {
 });
 search.addEventListener('input', render);
 priorityFilter.addEventListener('change', render);
+dueFilter.addEventListener('change', render);
 
 $('clear-done').addEventListener('click', () => {
   const count = board.tasks.filter(task => task.status === 'done').length;
