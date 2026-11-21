@@ -3,6 +3,7 @@ import {
   editTask, deleteTask, moveTask, parseBoard, serializeBoard,
 } from './src/board.js';
 import { filterTasks, localDateKey } from './src/filters.js';
+import { boardOverview } from './src/overview.js';
 
 const $ = id => document.getElementById(id);
 const dialog = $('task-dialog');
@@ -138,11 +139,22 @@ function card(task) {
 }
 
 function render() {
+  const today = localDateKey();
+  const overview = boardOverview(board.tasks, today);
+  $('overview-active').textContent = String(overview.active);
+  $('overview-completed').textContent = String(overview.finished);
+  $('overview-percent').textContent = overview.completionPercent + '% of board';
+  $('overview-overdue-count').textContent = String(overview.overdue);
+  $('overview-next7-count').textContent = String(overview.next7);
+  $('overview-today').textContent = overview.dueToday + ' due today';
+  $('overview-high').textContent = String(overview.highPriority);
+  $('overview-overdue').disabled = overview.overdue === 0;
+  $('overview-next7').disabled = overview.next7 === 0;
   const visible = filterTasks(board.tasks, {
     query: search.value,
     priority: priorityFilter.value,
     due: dueFilter.value,
-    today: localDateKey(),
+    today,
   });
   $('total-count').textContent = board.tasks.length + (visible.length !== board.tasks.length ? ' total · ' + visible.length + ' shown' : ' tasks');
   for (const status of STATUSES) {
@@ -274,6 +286,16 @@ document.addEventListener('keydown', event => {
 search.addEventListener('input', render);
 priorityFilter.addEventListener('change', render);
 dueFilter.addEventListener('change', render);
+$('overview-overdue').addEventListener('click', () => {
+  dueFilter.value = 'overdue';
+  render();
+  dueFilter.focus();
+});
+$('overview-next7').addEventListener('click', () => {
+  dueFilter.value = 'next7';
+  render();
+  dueFilter.focus();
+});
 
 $('clear-done').addEventListener('click', () => {
   const count = board.tasks.filter(task => task.status === 'done').length;
