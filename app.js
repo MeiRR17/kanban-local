@@ -4,7 +4,7 @@ import {
 } from './src/board.js';
 import { filterTasks, localDateKey } from './src/filters.js';
 import { boardOverview } from './src/overview.js';
-import { boardMetricsJson } from './src/summary.js';
+import { boardMetricsJson, filteredBoardMetricsJson } from './src/summary.js';
 import { boardTasksCsv } from './src/tasks-csv.js';
 
 const $ = id => document.getElementById(id);
@@ -194,6 +194,7 @@ function render() {
   }
   $('clear-filters').disabled = !hasActiveFilters();
   $('export-visible-csv').disabled = !hasActiveFilters();
+  $('export-visible-metrics').disabled = !hasActiveFilters();
   $('clear-done').disabled = !board.tasks.some(task => task.status === 'done');
   $('undo').disabled = undoStack.length === 0;
   $('redo').disabled = redoStack.length === 0;
@@ -398,6 +399,21 @@ $('export-visible-csv').addEventListener('click', () => {
       'Hidden tasks were excluded. CSV contains task details and cannot restore the board.');
   } catch (error) {
     notice('Filtered task CSV export failed: ' + error.message, 'error');
+  }
+});
+$('export-visible-metrics').addEventListener('click', () => {
+  if (!hasActiveFilters()) {
+    notice('Set at least one filter before exporting visible metrics.', 'warning');
+    return;
+  }
+  try {
+    const today = localDateKey();
+    const filters = { query: search.value, priority: priorityFilter.value, due: dueFilter.value };
+    downloadJson('kanban-visible-metrics-' + today + '.json',
+      filteredBoardMetricsJson(board, filters, today));
+    notice('Counts-only metrics exported for the currently matching tasks. No task details or search text were included; aggregate counts may still be sensitive.');
+  } catch (error) {
+    notice('Visible metrics export failed: ' + error.message, 'error');
   }
 });
 $('export-csv').addEventListener('click', () => {

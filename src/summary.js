@@ -1,5 +1,5 @@
 import { STATUSES, PRIORITIES } from './board.js';
-import { localDateKey } from './filters.js';
+import { filterTasks, localDateKey } from './filters.js';
 import { boardOverview } from './overview.js';
 
 /**
@@ -42,4 +42,39 @@ export function boardMetrics(board, today = localDateKey()) {
 
 export function boardMetricsJson(board, today = localDateKey()) {
   return JSON.stringify(boardMetrics(board, today), null, 2) + '\n';
+}
+
+/**
+ * Counts-only metrics for the tasks currently matching an active board filter.
+ * The search expression and selected filter values are intentionally excluded
+ * from the output; only which kinds of filter are active are disclosed.
+ * This export is not a restorable backup or an anonymization guarantee.
+ */
+export function filteredBoardMetricsJson(board, filters, today = localDateKey()) {
+  if (!filters || typeof filters !== 'object' || Array.isArray(filters)) {
+    throw new TypeError('Expected board filter options.');
+  }
+  const { query = '', priority = 'all', due = 'all' } = filters;
+  // Validate the whole board before computing a potentially incomplete subset.
+  const full = boardMetrics(board, today);
+  if (typeof query !== 'string') {
+    throw new TypeError('Search must be text.');
+  }
+  if (!query.trim() && priority === 'all' && due === 'all') {
+    throw new RangeError('Activate at least one filter before exporting visible metrics.');
+  }
+  const visible = filterTasks(board.tasks, { query, priority, due, today });
+  const metrics = boardMetrics({ version: 1, tasks: visible }, today);
+  return JSON.stringify({
+    ...metrics,
+    format: 'kanban-local-visible-counts-v1',
+    scope: 'matching-tasks-only',
+    sourceTaskCount: full.total,
+    activeFilterKinds: {
+      search: Boolean(query.trim()),
+      priority: priority !== 'all',
+      due: due !== 'all',
+    },
+    advisory: 'Counts, total board size, filter kinds and the local reporting date can still be sensitive. No filter values or task details are included. This is not a backup.',
+  }, null, 2) + '\n';
 }
