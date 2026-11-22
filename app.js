@@ -5,6 +5,7 @@ import {
 import { filterTasks, localDateKey } from './src/filters.js';
 import { boardOverview } from './src/overview.js';
 import { boardMetricsJson } from './src/summary.js';
+import { boardTasksCsv } from './src/tasks-csv.js';
 
 const $ = id => document.getElementById(id);
 const dialog = $('task-dialog');
@@ -360,8 +361,8 @@ async function readBoardBackup(file) {
     throw new Error('Board backup must be valid UTF-8; no tasks were imported.');
   }
 }
-function downloadJson(filename, content) {
-  const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -371,6 +372,19 @@ function downloadJson(filename, content) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function downloadJson(filename, content) {
+  downloadFile(filename, content, 'application/json;charset=utf-8');
+}
+$('export-csv').addEventListener('click', () => {
+  try {
+    downloadFile('kanban-tasks-' + localDateKey() + '.csv', boardTasksCsv(board),
+      'text/csv;charset=utf-8');
+    notice('All task details exported as CSV, regardless of filters. The file may be confidential; CSV cannot restore the board.');
+  } catch (error) {
+    notice('Task CSV export failed: ' + error.message, 'error');
+  }
+});
 
 $('export').addEventListener('click', () => {
   downloadJson('kanban-local-' + localDateKey() + '.json', serializeBoard(board));

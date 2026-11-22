@@ -22,6 +22,7 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 - **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser. If an existing saved board cannot be parsed (including an unsupported version), it is **not automatically overwritten** by edits to the temporary empty board; a recovery warning and an explicit **Replace saved data** action are shown. This avoids silently destroying the saved bytes before the owner can recover a backup.
 - **Backup:** Export all tasks to JSON or replace the board from an exported JSON file. Imports are validated and require confirmation. Backup bytes are strictly decoded as UTF-8 (rejecting malformed encoding rather than silently corrupting task text); the 1 MiB limit is checked both before and after the asynchronous read. If the board changes, a task editor opens or another import begins while a file is being read, the old import is ignored instead of replacing newer work.
 - **Counts-only metrics:** A separate **Metrics** JSON export includes only total/active/completed counts, status and priority distributions, completion percentage and deadline counts for the local reporting date. It includes no task titles, descriptions, IDs, tags or individual due dates; it is not a restorable backup. Aggregate counts may still disclose operational information.
+- **Tasks CSV:** Explicitly export the **entire board**, regardless of active search or due/priority filters, with task ID, title, description, status, priority, tags, due date, creation and update timestamps. Export uses UTF-8 with BOM, quoted CSV fields, and text-prefix neutralization for cells that spreadsheet viewers could interpret as formulas (including after leading whitespace). Multiline descriptions remain quoted. This is a full-data **sensitive** export and is **not an importable backup**: use JSON Export to preserve a restorable board. No task data is sent to a remote service.
 - **Cleanup:** Remove completed tasks after confirming.
 
 ## Privacy and limitations
@@ -45,6 +46,7 @@ This is a code implementation awaiting the owner's centralized validation cycle;
 - `src/filters.js` — pure local-calendar search, priority and due-date filters
 - `src/overview.js` — aggregate progress and due-date counters without task details
 - `src/summary.js` — isolated counts-only board metrics JSON export, without individual task records
+- `src/tasks-csv.js` — local full-board CSV export with conservative spreadsheet-formula neutralization
 - `LICENSE` — MIT
 
 ## Author
