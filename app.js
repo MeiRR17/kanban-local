@@ -193,6 +193,7 @@ function render() {
     else lane.append(make('div', 'empty-lane', all.length ? 'No tasks match your filters.' : 'Nothing here yet. Add a task to get started.'));
   }
   $('clear-filters').disabled = !hasActiveFilters();
+  $('export-visible-csv').disabled = !hasActiveFilters();
   $('clear-done').disabled = !board.tasks.some(task => task.status === 'done');
   $('undo').disabled = undoStack.length === 0;
   $('redo').disabled = redoStack.length === 0;
@@ -376,6 +377,29 @@ function downloadFile(filename, content, mime) {
 function downloadJson(filename, content) {
   downloadFile(filename, content, 'application/json;charset=utf-8');
 }
+$('export-visible-csv').addEventListener('click', () => {
+  if (!hasActiveFilters()) {
+    notice('Set a search, priority, or due-date filter before exporting visible tasks.', 'warning');
+    return;
+  }
+  try {
+    // Re-run the same pure filter as render() with one captured local date.
+    // Never serialize hidden tasks, even if the full board changed in memory.
+    const today = localDateKey();
+    const visible = filterTasks(board.tasks, {
+      query: search.value,
+      priority: priorityFilter.value,
+      due: dueFilter.value,
+      today,
+    });
+    downloadFile('kanban-visible-tasks-' + today + '.csv',
+      boardTasksCsv({ version: 1, tasks: visible }), 'text/csv;charset=utf-8');
+    notice('Exported ' + visible.length + ' currently visible task(s) as CSV. ' +
+      'Hidden tasks were excluded. CSV contains task details and cannot restore the board.');
+  } catch (error) {
+    notice('Filtered task CSV export failed: ' + error.message, 'error');
+  }
+});
 $('export-csv').addEventListener('click', () => {
   try {
     downloadFile('kanban-tasks-' + localDateKey() + '.csv', boardTasksCsv(board),
