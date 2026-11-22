@@ -191,6 +191,7 @@ function render() {
     if (filtered.length) filtered.forEach(task => lane.append(card(task)));
     else lane.append(make('div', 'empty-lane', all.length ? 'No tasks match your filters.' : 'Nothing here yet. Add a task to get started.'));
   }
+  $('clear-filters').disabled = !hasActiveFilters();
   $('clear-done').disabled = !board.tasks.some(task => task.status === 'done');
   $('undo').disabled = undoStack.length === 0;
   $('redo').disabled = redoStack.length === 0;
@@ -320,6 +321,14 @@ document.addEventListener('keydown', event => {
 search.addEventListener('input', render);
 priorityFilter.addEventListener('change', render);
 dueFilter.addEventListener('change', render);
+$('clear-filters').addEventListener('click', () => {
+  search.value = '';
+  priorityFilter.value = 'all';
+  dueFilter.value = 'all';
+  render();
+  notice('All board filters cleared. Dragging and reordering are available again.');
+  search.focus();
+});
 $('overview-overdue').addEventListener('click', () => {
   dueFilter.value = 'overdue';
   render();
@@ -338,6 +347,19 @@ $('clear-done').addEventListener('click', () => {
     commit({ ...board, tasks: board.tasks.filter(task => task.status !== 'done') });
   }
 });
+/** Decode imported backups strictly: File.text() silently substitutes invalid
+ * UTF-8, which could corrupt task descriptions before overwrite confirmation.
+ */
+async function readBoardBackup(file) {
+  if (file.size > 1024 * 1024) throw new RangeError('Choose a JSON file smaller than 1 MB.');
+  const bytes = await file.arrayBuffer();
+  if (bytes.byteLength > 1024 * 1024) throw new RangeError('Choose a JSON file smaller than 1 MB.');
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error('Board backup must be valid UTF-8; no tasks were imported.');
+  }
+}
 function downloadJson(filename, content) {
   const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -373,7 +395,7 @@ $('import-file').addEventListener('change', async event => {
     return;
   }
   try {
-    const text = await file.text();
+    const text = await readBoardBackup(file);
     if (request !== importSequence) return;
     if (boardRevision !== startingRevision || dialog.open) {
       notice('Board changed or task editor opened during file reading. Import cancelled to preserve your changes.', 'warning');
