@@ -299,7 +299,10 @@ $('board').addEventListener('drop', event => {
   const lane = event.target.closest('.lane');
   const target = event.target.closest('.task');
   if (lane) {
-    const before = target?.dataset.id !== dragging ? target?.dataset.id : null;
+    // Preserve a self-drop target rather than converting it to "append".
+    // moveTask() recognizes the unchanged position and returns the board
+    // object itself, so no timestamp, persistence or Undo history is added.
+    const before = target?.dataset.id ?? null;
     move(dragging, lane.dataset.status, before);
   }
   dragging = null;

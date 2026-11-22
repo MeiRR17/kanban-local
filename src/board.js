@@ -126,6 +126,22 @@ export function moveTask(board, id, status, beforeId = null) {
     const target = board.tasks.find(t => t.id === beforeId);
     if (!target || target.status !== status) throw new Error('Invalid drop destination.');
   }
+  if (beforeId === id && status !== task.status) {
+    throw new Error('Cannot place a task ahead of itself in a different column.');
+  }
+  // A self-drop or an insertion before the immediate next sibling does not
+  // change the order. Nor does appending the already-final task in its lane.
+  // Return the same board object so the UI does not create an Undo entry,
+  // update timestamps or write a misleading "saved" notification.
+  if (status === task.status) {
+    const siblings = board.tasks.filter(entry => entry.status === status);
+    const at = siblings.findIndex(entry => entry.id === id);
+    if (beforeId === id ||
+        (beforeId === null && at === siblings.length - 1) ||
+        (beforeId !== null && siblings[at + 1]?.id === beforeId)) {
+      return board;
+    }
+  }
   const moved = { ...task, status, updatedAt: new Date().toISOString() };
   const tasks = board.tasks.filter(t => t.id !== id);
   const index = beforeId && beforeId !== id
