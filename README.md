@@ -21,6 +21,7 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 - **Focus:** Filter by text, priority and due date. Due-date options include overdue, today, the next seven calendar days, and tasks without a date. Completed tasks are excluded from overdue/today/upcoming views, but can appear in the undated view. Column counters represent all tasks, while the toolbar shows the visible count when filtering.
 - **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser. If an existing saved board cannot be parsed (including an unsupported version), it is **not automatically overwritten** by edits to the temporary empty board; a recovery warning and an explicit **Replace saved data** action are shown. This avoids silently destroying the saved bytes before the owner can recover a backup.
 - **Backup:** Export all tasks to JSON or replace the board from an exported JSON file. Imports are validated and require confirmation. If the board changes, a task editor opens or another import begins while a file is being read, the old import is ignored instead of replacing newer work.
+- **Counts-only metrics:** A separate **Metrics** JSON export includes only total/active/completed counts, status and priority distributions, completion percentage and deadline counts for the local reporting date. It includes no task titles, descriptions, IDs, tags or individual due dates; it is not a restorable backup. Aggregate counts may still disclose operational information.
 - **Cleanup:** Remove completed tasks after confirming.
 
 ## Privacy and limitations
@@ -31,7 +32,7 @@ If the stored board is unreadable, new edits and imports remain in memory until 
 
 Undo/redo history is **in memory only**, not part of the exported board JSON or localStorage. It disappears when the tab reloads or closes. Export a JSON backup to protect important task changes. Data is stored in your current browser profile and may disappear if storage is cleared or private browsing closes. **Export regularly.** There is no cross-device synchronization. Due-date comparisons use the browser's local calendar date; **Next 7 days** means today plus the next six calendar days, not the next 168 hours.
 
-A board contains at most 500 tasks. Each task allows a 120-character title, 3,000-character description, and 12 tags of up to 24 characters each. JSON imports are limited to 1 MB. The exported format is versioned (`version: 1`). Importing a file **replaces**, rather than merges, the existing board.
+The metrics export always covers the **entire current board**, regardless of search/priority/due filters; unlike the full backup it cannot be imported to recover lost tasks. A board contains at most 500 tasks. Each task allows a 120-character title, 3,000-character description, and 12 tags of up to 24 characters each. JSON imports are limited to 1 MB. The exported format is versioned (`version: 1`). Importing a file **replaces**, rather than merges, the existing board.
 
 This is a code implementation awaiting the owner's centralized validation cycle; automated tests have not been run.
 
@@ -43,6 +44,7 @@ This is a code implementation awaiting the owner's centralized validation cycle;
 - `src/board.js` — pure task model, validation and persistence
 - `src/filters.js` — pure local-calendar search, priority and due-date filters
 - `src/overview.js` — aggregate progress and due-date counters without task details
+- `src/summary.js` — isolated counts-only board metrics JSON export, without individual task records
 - `LICENSE` — MIT
 
 ## Author

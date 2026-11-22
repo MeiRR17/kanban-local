@@ -4,6 +4,7 @@ import {
 } from './src/board.js';
 import { filterTasks, localDateKey } from './src/filters.js';
 import { boardOverview } from './src/overview.js';
+import { boardMetricsJson } from './src/summary.js';
 
 const $ = id => document.getElementById(id);
 const dialog = $('task-dialog');
@@ -337,16 +338,28 @@ $('clear-done').addEventListener('click', () => {
     commit({ ...board, tasks: board.tasks.filter(task => task.status !== 'done') });
   }
 });
-$('export').addEventListener('click', () => {
-  const data = new Blob([serializeBoard(board)], { type: 'application/json;charset=utf-8' });
-  const url = URL.createObjectURL(data);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'kanban-local-' + new Date().toISOString().slice(0, 10) + '.json';
-  document.body.append(a);
-  a.click();
-  a.remove();
+function downloadJson(filename, content) {
+  const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('export').addEventListener('click', () => {
+  downloadJson('kanban-local-' + localDateKey() + '.json', serializeBoard(board));
+});
+$('export-summary').addEventListener('click', () => {
+  try {
+    downloadJson('kanban-metrics-' + localDateKey() + '.json', boardMetricsJson(board));
+    notice('Counts-only board metrics exported. No task details are included, but aggregate numbers may still be sensitive.');
+  } catch (error) {
+    notice('Metrics export failed: ' + error.message, 'error');
+  }
 });
 $('import').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', async event => {
