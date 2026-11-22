@@ -137,13 +137,26 @@ export function moveTask(board, id, status, beforeId = null) {
 }
 
 export function readStoredBoard(storage = localStorage) {
+  let raw;
   try {
-    const raw = storage.getItem(STORAGE_KEY);
-    return raw ? { board: parseBoard(raw), warning: '' } : { board: emptyBoard(), warning: '' };
-  } catch (error) {
+    raw = storage.getItem(STORAGE_KEY);
+  } catch {
     return {
       board: emptyBoard(),
-      warning: 'Saved board could not be loaded. Local storage may be unavailable or contain invalid data; existing storage has not been overwritten.',
+      warning: 'Browser storage is unavailable. Changes cannot be saved here; export a JSON backup.',
+      recoveryRequired: false,
+    };
+  }
+  if (raw === null) return { board: emptyBoard(), warning: '', recoveryRequired: false };
+  try {
+    return { board: parseBoard(raw), warning: '', recoveryRequired: false };
+  } catch {
+    // Do not overwrite malformed or newer-version stored data while a user
+    // edits the temporary empty board. They may still recover it externally.
+    return {
+      board: emptyBoard(),
+      warning: 'Existing saved board is unreadable. Its data is protected from automatic overwrite. Import a valid backup or export the current board, then explicitly approve replacement.',
+      recoveryRequired: true,
     };
   }
 }

@@ -19,13 +19,15 @@ Open http://localhost:8000 in a modern browser. Static hosting such as GitHub Pa
 - **Undo / redo:** Up to 30 previous board changes in the current tab session, including task edits, deletes, completed-task cleanup and imported-board replacement. Use toolbar buttons or Ctrl/⌘+Z, Ctrl/⌘+Shift+Z or Ctrl+Y when focus is not in an input.
 - **Board overview:** A counts-only dashboard above the columns reports active/completed work, completion percentage, overdue deadlines, due-next-seven-days workload and active high-priority tasks. Deadline cards jump to the respective due-date filters. These counts cover the **entire board**, even when a filter is active.
 - **Focus:** Filter by text, priority and due date. Due-date options include overdue, today, the next seven calendar days, and tasks without a date. Completed tasks are excluded from overdue/today/upcoming views, but can appear in the undated view. Column counters represent all tasks, while the toolbar shows the visible count when filtering.
-- **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser.
+- **Persistence:** Tasks save in localStorage automatically and are reloaded in the same browser. If an existing saved board cannot be parsed (including an unsupported version), it is **not automatically overwritten** by edits to the temporary empty board; a recovery warning and an explicit **Replace saved data** action are shown. This avoids silently destroying the saved bytes before the owner can recover a backup.
 - **Backup:** Export all tasks to JSON or replace the board from an exported JSON file. Imports are validated and require confirmation. If the board changes, a task editor opens or another import begins while a file is being read, the old import is ignored instead of replacing newer work.
 - **Cleanup:** Remove completed tasks after confirming.
 
 ## Privacy and limitations
 
 Tasks are not sent to a server; the app makes no network requests except any normal static resource requests made by the host page.
+
+If the stored board is unreadable, new edits and imports remain in memory until the user explicitly confirms replacing the storage entry. Export the current board as JSON and try recovering a previous backup before confirming: replacement is destructive and not undoable. If browser storage is entirely unavailable, the app continues in memory and saving will report an error.
 
 Undo/redo history is **in memory only**, not part of the exported board JSON or localStorage. It disappears when the tab reloads or closes. Export a JSON backup to protect important task changes. Data is stored in your current browser profile and may disappear if storage is cleared or private browsing closes. **Export regularly.** There is no cross-device synchronization. Due-date comparisons use the browser's local calendar date; **Next 7 days** means today plus the next six calendar days, not the next 168 hours.
 

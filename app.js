@@ -14,6 +14,8 @@ const dueFilter = $('due-filter');
 const hasActiveFilters = () => Boolean(search.value.trim()) || priorityFilter.value !== 'all' || dueFilter.value !== 'all';
 const saved = readStoredBoard();
 let board = saved.board;
+let recoveryRequired = saved.recoveryRequired === true;
+$('recover-storage').hidden = !recoveryRequired;
 let dragging = null;
 let editingId = null;
 const HISTORY_LIMIT = 30;
@@ -35,14 +37,30 @@ function notice(message, type = '') {
 if (saved.warning) notice(saved.warning, 'warning');
 
 function saveAndRender(successMessage) {
-  try {
-    storeBoard(board);
-    notice(successMessage);
-  } catch {
-    notice('Could not save locally (storage may be blocked or full). Export a JSON backup now to avoid losing changes.', 'error');
+  if (recoveryRequired) {
+    notice('Board changes are in memory only. The unreadable saved data is still protected; export a backup and use Replace saved data to opt in to overwriting it.', 'warning');
+  } else {
+    try {
+      storeBoard(board);
+      notice(successMessage);
+    } catch {
+      notice('Could not save locally (storage may be blocked or full). Export a JSON backup now to avoid losing changes.', 'error');
+    }
   }
   render();
 }
+$('recover-storage').addEventListener('click', () => {
+  if (!recoveryRequired) return;
+  if (!confirm('The previously saved board is unreadable. Replacing it will permanently overwrite those bytes and cannot be undone. Recover any older backup first. Replace the saved data with the CURRENT board?')) return;
+  try {
+    storeBoard(board);
+    recoveryRequired = false;
+    $('recover-storage').hidden = true;
+    notice('Current board saved. The unreadable previous storage entry was replaced.', 'warning');
+  } catch {
+    notice('Storage replacement failed. Existing unreadable data was not intentionally cleared. Export the current board as JSON.', 'error');
+  }
+});
 function commit(nextBoard) {
   if (nextBoard === board) return;
   undoStack.push(board);
