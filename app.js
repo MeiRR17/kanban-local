@@ -6,6 +6,7 @@ import { filterTasks, localDateKey } from './src/filters.js';
 import { boardOverview } from './src/overview.js';
 import { boardMetricsJson, filteredBoardMetricsJson } from './src/summary.js';
 import { boardTasksCsv } from './src/tasks-csv.js';
+import { boardTasksIcs } from './src/tasks-ics.js';
 
 const $ = id => document.getElementById(id);
 const dialog = $('task-dialog');
@@ -419,6 +420,16 @@ $('export-visible-metrics').addEventListener('click', () => {
     notice('Visible metrics export failed: ' + error.message, 'error');
   }
 });
+$('export-ics').addEventListener('click', () => {
+  try {
+    downloadFile('kanban-tasks-' + localDateKey() + '.ics', boardTasksIcs(board),
+      'text/calendar;charset=utf-8');
+    notice('All task details exported as iCalendar VTODO items, regardless of filters. The file may be confidential; it is not a board backup.');
+  } catch (error) {
+    notice('Calendar export failed: ' + error.message, 'error');
+  }
+});
+
 $('export-csv').addEventListener('click', () => {
   try {
     downloadFile('kanban-tasks-' + localDateKey() + '.csv', boardTasksCsv(board),
